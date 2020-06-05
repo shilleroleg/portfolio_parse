@@ -2,92 +2,96 @@ import sqlite3
 from sqlite3 import Error
 
 
-def sql_connection():
-    try:
-        # Для выполнения операторов SQLite3 сначала устанавливается соединение c базой
-        # Cоздаeм базу данных в оперативной памяти
+class SQLiter:
+
+    def __init__(self, database):
+        """Подключаемся к БД и сохраняем курсор соединения"""
         #  By default, check_same_thread is True and only the creating thread may use the connection.
         #  If set False, the returned connection may be shared across multiple threads.
         #  When using multiple threads with the same connection writing operations should be serialized
         #  by the user to avoid data corruption
-        con = sqlite3.connect('mydatabase.db', check_same_thread=False)
-        print("Connection is established: Database is created")
-        return con
+        self.connection = sqlite3.connect(database, check_same_thread=False)
+        self.cursor = self.connection.cursor()
 
-    except Error:
-        print(Error)
+    def create_table(self):
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS assets("
+                            "id integer PRIMARY KEY,"
+                            "time_report CHAR(100),"
+                            "incoming_amount FLOAT,"
+                            "outgoing_amount FLOAT,"
+                            "credit_customer FLOAT,"
+                            "assets_at_start FLOAT,"
+                            "assets_at_end FLOAT)")
+        # Метод commit() сохраняет все сделанные изменения
+        self.connection.commit()
 
+    def insert_data(self, data):
+        """Добавляем данные за один день"""
+        with self.connection:
+            return self.cursor.execute("INSERT OR IGNORE INTO assets("
+                                       "time_report,"
+                                       "incoming_amount,"
+                                       "outgoing_amount,"
+                                       "credit_customer,"
+                                       "assets_at_start,"
+                                       "assets_at_end) VALUES(?,?,?,?,?,?)",
+                                       (data["time_report"],
+                                        data["incoming_amount"],
+                                        data["outgoing_amount"],
+                                        data["credit_customer"],
+                                        data["assets_at_start"],
+                                        data["assets_at_end"],))
 
-def sql_create_table(connect):
-    #  Cоздается объект курсора с использованием объекта соединения
-    cursor_obj = connect.cursor()
-    cursor_obj.execute("CREATE TABLE IF NOT EXISTS weather("
-                       "id integer PRIMARY KEY,"
-                       "weather_flag integer)")
-    # Метод commit() сохраняет все сделанные изменения
-    connect.commit()
-
-
-def sql_insert(connect, entities):
-    cursor_obj = connect.cursor()
-    cursor_obj.execute('INSERT OR IGNORE INTO weather('
-                       'id,'
-                       'weather_flag) VALUES(?, ?)', entities)
-    connect.commit()
-
-
-def sql_update(connect, val, id_for_upd):
-    # Для обновления будем использовать инструкцию UPDATE.
-    # Также воспользуемся предикатом WHERE в качестве условия для выбора нужного сотрудника.
-    cursor_obj = connect.cursor()
-    string_for_update = 'UPDATE weather SET weather_flag = ' + str(val) + ' where id = ' + str(id_for_upd)
-    print(string_for_update)
-    cursor_obj.execute('UPDATE weather SET weather_flag = ' + str(val) + ' where id = ' + str(id_for_upd))
-    connect.commit()
-
-
-def sql_select(connect):
-    cursor_obj = connect.cursor()
-    #  извлекаем данные из БД
-    cursor_obj.execute('SELECT * FROM weather')
-    # сохраняем данные в переменную
-    table = cursor_obj.fetchall()
-    return table
+    def close(self):
+        """Закрываем соединение с БД"""
+        self.connection.close()
 
 
-def sql_select_flag(connect, id_for_flag):
-    cursor_obj = connect.cursor()
-    #  извлекаем данные из БД
-    cursor_obj.execute('SELECT weather_flag FROM weather where id = ' + str(id_for_flag))
-    # сохраняем данные в переменную
-    flag = cursor_obj.fetchall()
-    if len(flag) > 0:
-        return flag[0][0]
-    else:
-        return None
+# def sql_update(connect, val, id_for_upd):
+#     # Для обновления будем использовать инструкцию UPDATE.
+#     # Также воспользуемся предикатом WHERE в качестве условия для выбора нужного сотрудника.
+#     cursor_obj = connect.cursor()
+#     string_for_update = 'UPDATE weather SET weather_flag = ' + str(val) + ' where id = ' + str(id_for_upd)
+#     print(string_for_update)
+#     cursor_obj.execute('UPDATE weather SET weather_flag = ' + str(val) + ' where id = ' + str(id_for_upd))
+#     connect.commit()
+#
+#
+# def sql_select(connect):
+#     cursor_obj = connect.cursor()
+#     #  извлекаем данные из БД
+#     cursor_obj.execute('SELECT * FROM weather')
+#     # сохраняем данные в переменную
+#     table = cursor_obj.fetchall()
+#     return table
+#
+#
+# def sql_select_flag(connect, id_for_flag):
+#     cursor_obj = connect.cursor()
+#     #  извлекаем данные из БД
+#     cursor_obj.execute('SELECT weather_flag FROM weather where id = ' + str(id_for_flag))
+#     # сохраняем данные в переменную
+#     flag = cursor_obj.fetchall()
+#     if len(flag) > 0:
+#         return flag[0][0]
+#     else:
+#         return None
 
 
 if __name__ == "__main__":
-    con = sql_connection()
-    sql_create_table(con)
+    db = SQLiter("my.db")
+    db.create_table()
 
-    # Вставляем значения
-    entities1 = (1, 0)
-    entities2 = (2, 0)
-    entities3 = (3, 0)
-    sql_insert(con, entities1)
-    sql_insert(con, entities2)
-    sql_insert(con, entities3)
-    # Изменяем данные.
-    sql_update(con, 1, 2)
-    # Извлекаем данные
-    rows = sql_select(con)
-    for row in rows:
-        print(row)
+    portfolio_dict = {'time_report': "(2019, 7, 15, 0, 0)",
+                      'incoming_amount': 24699.31,
+                      'outgoing_amount': 20106.72,
+                      'credit_customer': 0,
+                      'credit_corporate': 968.64,
+                      'assets_at_start': 241779.06,
+                      'assets_at_end': 241515.09}
 
-    #
-    flag = sql_select_flag(con, 2)
-    print(flag)
+    db.insert_data(portfolio_dict)
 
-    # Закрываем соединение с базой
-    con.close()
+    db.close()
+
+
