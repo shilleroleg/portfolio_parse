@@ -4,6 +4,7 @@ import xlrd
 from datetime import datetime
 
 import get_file_list as gfl
+import sql_database as sq
 
 
 def parse_excel_report(file_name):
@@ -42,8 +43,8 @@ def parse_excel_report(file_name):
         cell_name = "A" + str(cur_row)
         # Дата отчета
         if ws.cell(cur_row, xlsx_col).value == "ПериодДат":
-            time_rep = datetime.strptime(ws.cell(cur_row, 3 + xlsx_col).value.split(" ")[-1], '%d.%m.%Y')
-            return_assets_dict['time_report'].append(time_rep)
+            time_rep = datetime.strptime(ws.cell(cur_row, 3 + xlsx_col).value.split(" ")[-1], '%d.%m.%Y')  # In datetime
+            return_assets_dict['time_report'].append(time_rep.strftime('%d.%m.%Y'))                        # In str
         # Входящая сумма средств на счете
         if ws.cell(cur_row, xlsx_col).value == "100":
             incoming_amount = ws.cell(cur_row, 5 + xlsx_col).value
@@ -67,15 +68,27 @@ def parse_excel_report(file_name):
             break                     # Выходим так как достигли конца таблицы со средствами
 
         cur_row += 1
+    # В старых отчетах исходящий остаток не приводился, присваиваем как входящий остаток
+    if return_assets_dict['incoming_amount'] and not return_assets_dict['outgoing_amount']:
+        return_assets_dict['outgoing_amount'].append(return_assets_dict['incoming_amount'][0])
 
     return return_assets_dict, return_portfolio_dict
 
 
 if __name__ == "__main__":
     # Получаем список всех файлов с отчетами
-    file_list = gfl.get_file_list("c:\\Users\\olega\\PycharmProjects\\portfolio_parse\\src\\report\\")
-    print(file_list)
+    # file_list = gfl.get_file_list("c:\\Users\\olega\\PycharmProjects\\portfolio_parse\\src\\report\\")
+    file_list = gfl.get_file_list("d:\\olega\\Финансы\\Брокер\\Отчеты ПСБ\\")
+    # print(file_list)
 
-    for file_n in file_list:
+    db = sq.SQLiter("portfolio.db")
+    db.create_table()
+
+    for count, file_n in enumerate(file_list):
         assets_dict, portfolio_dict = parse_excel_report(file_n)
         print(assets_dict)
+        db.insert_data(assets_dict)
+        file_name = file_n.split("\\")[-1]
+        print(f"Отчет № {str(count)} из {len(file_list)} - {file_name}")
+    #
+    db.close()

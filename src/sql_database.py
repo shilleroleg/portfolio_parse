@@ -16,10 +16,11 @@ class SQLiter:
     def create_table(self):
         self.cursor.execute("CREATE TABLE IF NOT EXISTS assets("
                             "id integer PRIMARY KEY,"
-                            "time_report CHAR(100),"
+                            "time_report CHAR(20),"
                             "incoming_amount FLOAT,"
                             "outgoing_amount FLOAT,"
                             "credit_customer FLOAT,"
+                            "credit_corporate FLOAT,"
                             "assets_at_start FLOAT,"
                             "assets_at_end FLOAT)")
         # Метод commit() сохраняет все сделанные изменения
@@ -27,20 +28,45 @@ class SQLiter:
 
     def insert_data(self, data):
         """Добавляем данные за один день"""
+        # Проверяем, что словарь не пустой
+        is_empty = False
+        for dict_key in data.keys():
+            is_empty += bool(data[dict_key])
+
+        # Если хотя-бы одно значение пустое, выходим
+        if is_empty < len(data.keys()):
+            return
+
         with self.connection:
             return self.cursor.execute("INSERT OR IGNORE INTO assets("
                                        "time_report,"
                                        "incoming_amount,"
                                        "outgoing_amount,"
                                        "credit_customer,"
+                                       "credit_corporate,"
                                        "assets_at_start,"
-                                       "assets_at_end) VALUES(?,?,?,?,?,?)",
-                                       (data["time_report"],
-                                        data["incoming_amount"],
-                                        data["outgoing_amount"],
-                                        data["credit_customer"],
-                                        data["assets_at_start"],
-                                        data["assets_at_end"],))
+                                       "assets_at_end) VALUES(?,?,?,?,?,?,?)",
+                                       (data["time_report"][0],
+                                        data["incoming_amount"][0],
+                                        data["outgoing_amount"][0],
+                                        data["credit_customer"][0],
+                                        data["credit_corporate"][0],
+                                        data["assets_at_start"][0],
+                                        data["assets_at_end"][0]))
+
+    def find_duplicates(self, find_table="assets", find_col="time_report"):
+        """Ищем строки дубликаты по времени"""
+        self.cursor.execute("SELECT id, " + find_col + ", COUNT(*) "
+                            "FROM " + find_table +
+                            " GROUP BY " + find_col +
+                            " HAVING COUNT(*) > 1")
+        return self.cursor.fetchall()
+
+    def delete_row(self, del_table, del_id):
+        """Удаляем строку из таблицы del_table по id del_id"""
+        sql_delete_query = "DELETE FROM " + del_table + " WHERE id = " + str(del_id)
+        self.cursor.execute(sql_delete_query)
+        self.connection.commit()
 
     def close(self):
         """Закрываем соединение с БД"""
@@ -61,36 +87,54 @@ class SQLiter:
 #     cursor_obj = connect.cursor()
 #     #  извлекаем данные из БД
 #     cursor_obj.execute('SELECT * FROM weather')
-#     # сохраняем данные в переменную
+# # #     cursor_obj.execute('SELECT weather_flag FROM weather where id = ' + str(id_for_flag))
+#     сохраняем данные в переменную
 #     table = cursor_obj.fetchall()
 #     return table
 #
-#
-# def sql_select_flag(connect, id_for_flag):
-#     cursor_obj = connect.cursor()
-#     #  извлекаем данные из БД
-#     cursor_obj.execute('SELECT weather_flag FROM weather where id = ' + str(id_for_flag))
-#     # сохраняем данные в переменную
-#     flag = cursor_obj.fetchall()
-#     if len(flag) > 0:
-#         return flag[0][0]
-#     else:
-#         return None
-
 
 if __name__ == "__main__":
-    db = SQLiter("my.db")
-    db.create_table()
+    db = SQLiter("portfolio.db")
+    # db.create_table()
 
-    portfolio_dict = {'time_report': "(2019, 7, 15, 0, 0)",
-                      'incoming_amount': 24699.31,
-                      'outgoing_amount': 20106.72,
-                      'credit_customer': 0,
-                      'credit_corporate': 968.64,
-                      'assets_at_start': 241779.06,
-                      'assets_at_end': 241515.09}
+    # portfolio_dict = {'time_report': "(2019, 7, 15, 0, 0)",
+    #                   'incoming_amount': 24699.31,
+    #                   'outgoing_amount': 20106.72,
+    #                   'credit_customer': 0,
+    #                   'credit_corporate': 968.64,
+    #                   'assets_at_start': 241779.06,
+    #                   'assets_at_end': 241515.09}
+    #
+    # db.insert_data(portfolio_dict)
 
-    db.insert_data(portfolio_dict)
+    portfolio_dict = {'time_report': [],
+                      'incoming_amount': 10,
+                      'outgoing_amount': [],
+                      'credit_customer': 15,
+                      'credit_corporate': [],
+                      'assets_at_start': [],
+                      'assets_at_end': []}
+    flag = False
+    for pd in portfolio_dict.keys():
+        flag += bool(portfolio_dict[pd])
+    print(flag)
+
+    if flag < len(portfolio_dict.keys()):
+        print("!!")
+
+
+    # db.insert_data(portfolio_dict)
+
+    # ans = db.find_duplicates(find_table="assets", find_col="time_report")
+    # print(ans)
+    #
+    # for an in ans:
+    #
+    #     ids = an[0]
+    #     times = an[1]
+    #     count = an[2]
+    #     db.delete_row("assets", ids)
+    #     print(ids, count)
 
     db.close()
 
