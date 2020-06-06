@@ -46,13 +46,13 @@ class SQLiter:
                                        "credit_corporate,"
                                        "assets_at_start,"
                                        "assets_at_end) VALUES(?,?,?,?,?,?,?)",
-                                       (data["time_report"][0],
-                                        data["incoming_amount"][0],
-                                        data["outgoing_amount"][0],
-                                        data["credit_customer"][0],
-                                        data["credit_corporate"][0],
-                                        data["assets_at_start"][0],
-                                        data["assets_at_end"][0]))
+                                       (data["time_report"],
+                                        data["incoming_amount"],
+                                        data["outgoing_amount"],
+                                        data["credit_customer"],
+                                        data["credit_corporate"],
+                                        data["assets_at_start"],
+                                        data["assets_at_end"]))
 
     def find_duplicates(self, find_table="assets", find_col="time_report"):
         """Ищем строки дубликаты по времени"""
