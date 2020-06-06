@@ -11,13 +11,13 @@ def parse_excel_report(file_name_parse):
     """Парсим файл с ежедневным отчетом и
      возвращаем словарь с активами assets_dict и словарь с портфелем portfolio_dict"""
     # Возвращаемые словари
-    return_assets_dict = {'time_report': [],
-                          'incoming_amount': [],
-                          'outgoing_amount': [],
-                          'credit_customer': [],
-                          'credit_corporate': [],
-                          'assets_at_start': [],
-                          'assets_at_end': []}
+    return_assets_dict = {'time_report': None,
+                          'incoming_amount': None,
+                          'outgoing_amount': None,
+                          'credit_customer': None,
+                          'credit_corporate': None,
+                          'assets_at_start': None,
+                          'assets_at_end': None}
     return_portfolio_dict = {}
     # Расширение файла
     file_ext = file_name_parse.split(".")[-1]
@@ -81,14 +81,14 @@ if __name__ == "__main__":
     # file_list = gfl.get_file_list("d:\\olega\\Финансы\\Брокер\\Отчеты ПСБ\\")
     # print(file_list)
 
-    # db = sq.SQLiter("portfolio.db")
-    # db.create_table()
+    db = sq.SQLiter("portfolio.db")
+    db.create_table()
 
     for count, file_n in enumerate(file_list):
         assets_dict, portfolio_dict = parse_excel_report(file_n)
         print(assets_dict)
-        # db.insert_data(assets_dict)
+        db.insert_data(assets_dict)
         file_name = file_n.split("\\")[-1]
         print(f"Отчет № {str(count)} из {len(file_list)} - {file_name}")
     #
-    # db.close()
+    db.close()

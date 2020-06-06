@@ -28,15 +28,6 @@ class SQLiter:
 
     def insert_data(self, data):
         """Добавляем данные за один день"""
-        # Проверяем, что словарь не пустой
-        is_empty = False
-        for dict_key in data.keys():
-            is_empty += bool(data[dict_key])
-
-        # Если хотя-бы одно значение пустое, выходим
-        if is_empty < len(data.keys()):
-            return
-
         with self.connection:
             return self.cursor.execute("INSERT OR IGNORE INTO assets("
                                        "time_report,"
@@ -107,13 +98,13 @@ if __name__ == "__main__":
     #
     # db.insert_data(portfolio_dict)
 
-    portfolio_dict = {'time_report': [],
+    portfolio_dict = {'time_report': None,
                       'incoming_amount': 10,
-                      'outgoing_amount': [],
+                      'outgoing_amount': None,
                       'credit_customer': 15,
-                      'credit_corporate': [],
-                      'assets_at_start': [],
-                      'assets_at_end': []}
+                      'credit_corporate': None,
+                      'assets_at_start': None,
+                      'assets_at_end': None}
     flag = False
     for pd in portfolio_dict.keys():
         flag += bool(portfolio_dict[pd])
