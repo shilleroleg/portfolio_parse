@@ -72,6 +72,105 @@ def parse_excel_report(file_name_parse):
     if return_assets_dict['incoming_amount'] and not return_assets_dict['outgoing_amount']:
         return_assets_dict['outgoing_amount'] = return_assets_dict['incoming_amount']
 
+    # Разбираем таблицы сделок
+    return_trade_dict = {'date_time_trade': [],
+                         'date_time_execution': [],
+                         'number_trade': [],
+                         'name_paper': [],
+                         'isin': [],
+                         'reg_num': [],
+                         'type_trade': [],
+                         'volume': [],
+                         'transac_price': [],
+                         'transac_amount': [],
+                         'nkd': [],
+                         'commission_TS': [],
+                         'commission_klir': [],
+                         'commission_its': [],
+                         'commission_brok': []}
+    while cur_row < ws_rows:
+        if str(ws.cell(cur_row, xlsx_col + 1).value).endswith('с расчетами в дату заключения'):
+            temp_row = 0
+            while ws.cell(cur_row + temp_row + 2, xlsx_col + 1).value != "Итого оборот":
+                # Дата и время совершения сделки. Плановая дата исполнения сделки в тот же день
+                date_time_trade = datetime.strptime(ws.cell(cur_row + temp_row + 2, xlsx_col + 1).value,
+                                                    '%d.%m.%Y %H:%M:%S')
+                return_trade_dict['date_time_trade'].append(date_time_trade.strftime('%d.%m.%Y %H:%M:%S'))
+                return_trade_dict['date_time_execution'].append(date_time_trade.strftime('%d.%m.%Y'))
+                # Номер сделки в ТС
+                number_trade = int(ws.cell(cur_row + temp_row + 2, xlsx_col + 2).value)
+                return_trade_dict['number_trade'].append(number_trade)
+                # Наименование эмитента, вид, категория (тип), выпуск, транш ЦБ
+                name_paper = ws.cell(cur_row + temp_row + 2, xlsx_col + 4).value
+                return_trade_dict['name_paper'].append(name_paper)
+                # ISIN
+                isin = ws.cell(cur_row + temp_row + 2, xlsx_col + 7).value
+                return_trade_dict['isin'].append(isin)
+                # Номер гос. регистрации
+                reg_num = ws.cell(cur_row + temp_row + 2, xlsx_col + 8).value
+                return_trade_dict['reg_num'].append(reg_num)
+                # Вид сделки (покупка/продажа)
+                type_trade = ws.cell(cur_row + temp_row + 2, xlsx_col + 9).value
+                return_trade_dict['type_trade'].append('buy' if type_trade == 'покупка' else 'sell')
+                # Кол-во ЦБ, шт.
+                volume = int(ws.cell(cur_row + temp_row + 2, xlsx_col + 10).value)
+                return_trade_dict['volume'].append(volume)
+                # Цена (% для обл)
+                transac_price = float(ws.cell(cur_row + temp_row + 2, xlsx_col + 12).value)
+                return_trade_dict['transac_price'].append(transac_price)
+                # Сумма сделки без НКД
+                transac_amount = float(ws.cell(cur_row + temp_row + 2, xlsx_col + 13).value)
+                return_trade_dict['transac_amount'].append(transac_amount)
+                # НКД
+                nkd = float(ws.cell(cur_row + temp_row + 2, xlsx_col + 14).value)
+                return_trade_dict['nkd'].append(nkd)
+
+                temp_row += 1
+
+        if str(ws.cell(cur_row, xlsx_col + 1).value).endswith('незавершенные в отчетном периоде'):
+            temp_row = 0
+            while ws.cell(cur_row + temp_row + 2, xlsx_col + 1).value != "Итого оборот":
+                # Дата и время совершения сделки.
+                date_time_trade = datetime.strptime(ws.cell(cur_row + temp_row + 2, xlsx_col + 1).value,
+                                                    '%d.%m.%Y %H:%M:%S')
+                return_trade_dict['date_time_trade'].append(date_time_trade.strftime('%d.%m.%Y %H:%M:%S'))
+                # Плановая дата исполнения сделки
+                date_time_exec = datetime.strptime(ws.cell(cur_row + temp_row + 2, xlsx_col + 2).value, '%d.%m.%Y')
+                return_trade_dict['date_time_execution'].append(date_time_exec.strftime('%d.%m.%Y'))
+                # Номер сделки в ТС
+                number_trade = ws.cell(cur_row + temp_row + 2, xlsx_col + 3).value
+                return_trade_dict['number_trade'].append(number_trade)
+                # Наименование эмитента, вид, категория (тип), выпуск, транш ЦБ
+                name_paper = ws.cell(cur_row + temp_row + 2, xlsx_col + 5).value
+                return_trade_dict['name_paper'].append(name_paper)
+                # ISIN
+                isin = ws.cell(cur_row + temp_row + 2, xlsx_col + 8).value
+                return_trade_dict['isin'].append(isin)
+                # Номер гос. регистрации
+                reg_num = ws.cell(cur_row + temp_row + 2, xlsx_col + 9).value
+                return_trade_dict['reg_num'].append(reg_num)
+                # Вид сделки (покупка/продажа)
+                type_trade = ws.cell(cur_row + temp_row + 2, xlsx_col + 10).value
+                return_trade_dict['type_trade'].append('buy' if type_trade == 'покупка' else 'sell')
+                # Кол-во ЦБ, шт.
+                volume = int(ws.cell(cur_row + temp_row + 2, xlsx_col + 11).value)
+                return_trade_dict['volume'].append(volume)
+                # Цена (% для обл)
+                transac_price = float(ws.cell(cur_row + temp_row + 2, xlsx_col + 13).value)
+                return_trade_dict['transac_price'].append(transac_price)
+                # Сумма сделки без НКД
+                transac_amount = float(ws.cell(cur_row + temp_row + 2, xlsx_col + 14).value)
+                return_trade_dict['transac_amount'].append(transac_amount)
+                # НКД
+                nkd = float(ws.cell(cur_row + temp_row + 2, xlsx_col + 15).value)
+                return_trade_dict['nkd'].append(nkd)
+
+                temp_row += 1
+
+        cur_row += 1
+
+    print(return_trade_dict)
+
     return return_assets_dict, return_portfolio_dict
 
 
@@ -86,8 +185,8 @@ if __name__ == "__main__":
 
     for count, file_n in enumerate(file_list):
         assets_dict, portfolio_dict = parse_excel_report(file_n)
-        print(assets_dict)
-        db.insert_data(assets_dict)
+        # print(assets_dict)
+        # db.insert_data(assets_dict)
         file_name = file_n.split("\\")[-1]
         print(f"Отчет № {str(count)} из {len(file_list)} - {file_name}")
     #
