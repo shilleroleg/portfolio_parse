@@ -1,9 +1,9 @@
 import os
 
+
 def get_file_list(file_name):
     # # текущая рабочая директория
     # work_dir = os.getcwd()
-
     tree = os.walk(file_name)
 
     file_list = []

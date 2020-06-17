@@ -13,97 +13,44 @@ class SQLiter:
         self.connection = sqlite3.connect(database, check_same_thread=False)
         self.cursor = self.connection.cursor()
 
-    def create_table(self):
-        self.cursor.execute("CREATE TABLE IF NOT EXISTS assets("
-                            "id integer PRIMARY KEY,"
-                            "time_report CHAR(64),"
-                            "incoming_amount FLOAT,"
-                            "outgoing_amount FLOAT,"
-                            "credit_customer FLOAT,"
-                            "credit_corporate FLOAT,"
-                            "assets_at_start FLOAT,"
-                            "assets_at_end FLOAT)")
+    def create_table(self, create_dict, type_list, table_name: str):
+        """Создаем таблицу с именем table_name и столбцами с именами ключей словаря create_dict,
+        типы данных задаются в списке type_list"""
+
+        # execute("CREATE TABLE IF NOT EXISTS assets("
+        #         "id integer PRIMARY KEY,"
+        #         "time_report CHAR(20),"
+        #         "incoming_amount FLOAT,"
+        #         "outgoing_amount FLOAT,"
+        #         "credit_customer FLOAT,"
+        #         "credit_corporate FLOAT,"
+        #         "assets_at_start FLOAT,"
+        #         "assets_at_end FLOAT)")
+
+        # Fixme
+        exec_str = "CREATE TABLE IF NOT EXISTS {0}(id integer PRIMARY KEY".format(table_name)
+
+        for num, key in enumerate(create_dict.keys()):
+            exec_str += ", {0} {1}".format(str(key), str(type_list[num]))
+
+        exec_str += ")"
+
+        self.cursor.execute(exec_str)
         # Метод commit() сохраняет все сделанные изменения
         self.connection.commit()
 
-    def create_table_trade(self):
-        self.cursor.execute("CREATE TABLE IF NOT EXISTS trades("
-                            "id integer PRIMARY KEY,"
-                            "date_time_trade CHAR(64),"
-                            "date_time_execution CHAR(64),"
-                            "number_trade BIGINT,"
-                            "name_paper CHAR(256),"
-                            "isin CHAR(64),"
-                            "reg_num CHAR(64),"
-                            "type_trade CHAR(8),"
-                            "volume INT,"
-                            "transac_price FLOAT,"
-                            "transac_amount FLOAT,"
-                            "nkd FLOAT,"
-                            "commission_ts FLOAT,"
-                            "commission_klir FLOAT,"
-                            "commission_its FLOAT,"
-                            "commission_brok FLOAT)")
-        # Метод commit() сохраняет все сделанные изменения
-        self.connection.commit()
-
-    def insert_data(self, data):
-        """Добавляем данные за один день"""
-        with self.connection:
-            return self.cursor.execute("INSERT OR IGNORE INTO assets("
-                                       "time_report,"
-                                       "incoming_amount,"
-                                       "outgoing_amount,"
-                                       "credit_customer,"
-                                       "credit_corporate,"
-                                       "assets_at_start,"
-                                       "assets_at_end) VALUES(?,?,?,?,?,?,?)",
-                                       (data["time_report"],
-                                        data["incoming_amount"],
-                                        data["outgoing_amount"],
-                                        data["credit_customer"],
-                                        data["credit_corporate"],
-                                        data["assets_at_start"],
-                                        data["assets_at_end"]))
-
-    def insert_data_trade(self, data):
-        """Добавляем сделки"""
+    def insert_data(self, data, table_name: str):
+        """Добавляем данные из словаря data в таблицу с именем table_name.
+        В словаре значения должны быть списком (даже из одного элемента).
+        Если в списке несколько элементов - обходим в цикле.
+        Если в списке нет элементов ничего не делаем"""
         # Добавляем только если не пустой словарь
-        if list(data.values())[0]:
-            print(data['date_time_trade'])
-            for i in range(len(data['date_time_trade'])):
-                print(len(data['date_time_trade']), i)
-                self.cursor.execute("INSERT OR IGNORE INTO trades("
-                                    "date_time_trade,"
-                                    "date_time_execution,"
-                                    "number_trade,"
-                                    "name_paper,"
-                                    "isin,"
-                                    "reg_num,"
-                                    "type_trade,"
-                                    "volume,"
-                                    "transac_price,"
-                                    "transac_amount,"
-                                    "nkd,"
-                                    "commission_ts,"
-                                    "commission_klir,"
-                                    "commission_its,"
-                                    "commission_brok) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                                    (data['date_time_trade'][i],
-                                     data['date_time_execution'][i],
-                                     data['number_trade'][i],
-                                     data['name_paper'][i],
-                                     data['isin'][i],
-                                     data['reg_num'][i],
-                                     data['type_trade'][i],
-                                     data['volume'][i],
-                                     data['transac_price'][i],
-                                     data['transac_amount'][i],
-                                     data['nkd'][i],
-                                     data['commission_ts'][i],
-                                     data['commission_klir'][i],
-                                     data['commission_its'][i],
-                                     data['commission_brok'][i]))
+        if tuple(data.values())[0]:
+            sql = 'INSERT OR IGNORE INTO {0} ({1}) VALUES ({2})'.format(table_name,
+                                                                        ','.join(data.keys()),
+                                                                        ','.join(['?'] * len(data)))
+            for i in range(len(tuple(data.values())[0])):
+                self.cursor.execute(sql, [row[i] for row in tuple(data.values())])
                 self.connection.commit()
 
     def find_duplicates(self, find_table="assets", find_col="time_report"):

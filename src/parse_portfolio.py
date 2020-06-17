@@ -12,6 +12,38 @@ import sql_database as sq
 # 3. Составить портфель по сделкам
 
 
+def list_of_dict():
+    # Инициализация возвращаемых словарей
+    # Словарь активов на день
+    assets_dict_ = {'time_report': [],
+                    'incoming_amount': [],
+                    'outgoing_amount': [],
+                    'credit_customer': [],
+                    'credit_corporate': [],
+                    'assets_at_start': [],
+                    'assets_at_end': []}
+    # Таблица сделок
+    trade_dict_ = {'date_time_trade': [],
+                   'date_time_execution': [],
+                   'number_trade': [],
+                   'name_paper': [],
+                   'isin': [],
+                   'reg_num': [],
+                   'type_trade': [],
+                   'volume': [],
+                   'transac_price': [],
+                   'transac_amount': [],
+                   'nkd': [],
+                   'commission_ts': [],
+                   'commission_klir': [],
+                   'commission_its': [],
+                   'commission_brok': []}
+    # Состояние портфеля на день
+    portfolio_dict_ = {}
+
+    return assets_dict_, trade_dict_, portfolio_dict_
+
+
 def parse_assets_table(return_assets_dict, ws, ws_rows, xlsx_col):
     """Разбираем таблицу Сводная информация по счетам клиента в валюте счета
     Она одна и в находится в начале.
@@ -22,33 +54,33 @@ def parse_assets_table(return_assets_dict, ws, ws_rows, xlsx_col):
         # Дата отчета
         if ws.cell(cur_row, xlsx_col).value == "ПериодДат":
             time_rep = datetime.strptime(ws.cell(cur_row, 3 + xlsx_col).value.split(" ")[-1], '%d.%m.%Y')  # In datetime
-            return_assets_dict['time_report'] = time_rep.strftime('%d.%m.%Y')  # In str
+            return_assets_dict['time_report'].append(time_rep.strftime('%d.%m.%Y'))  # In str
         # Входящая сумма средств на счете
         if ws.cell(cur_row, xlsx_col).value == "100":
             incoming_amount = ws.cell(cur_row, 5 + xlsx_col).value
-            return_assets_dict['incoming_amount'] = incoming_amount
+            return_assets_dict['incoming_amount'].append(incoming_amount)
         # Начислено клиентом и в рамках корпоративных действий
         if ws.cell(cur_row, xlsx_col).value == "230":
             credit_customer = ws.cell(cur_row, 5 + xlsx_col).value
             credit_corporate = ws.cell(cur_row + 1, 5 + xlsx_col).value
-            return_assets_dict['credit_customer'] = credit_customer
-            return_assets_dict['credit_corporate'] = credit_corporate
+            return_assets_dict['credit_customer'].append(credit_customer)
+            return_assets_dict['credit_corporate'].append(credit_corporate)
         # Исходящая сумма средств на счете
         if ws.cell(cur_row, xlsx_col).value == "2250":
             outgoing_amount = ws.cell(cur_row, 5 + xlsx_col).value
-            return_assets_dict['outgoing_amount'] = outgoing_amount
+            return_assets_dict['outgoing_amount'].append(outgoing_amount)
         # Сумма активов на начало и конец дня
         if ws.cell(cur_row, xlsx_col).value == "2600":
             assets_at_start = ws.cell(cur_row, 5 + xlsx_col).value
             assets_at_end = ws.cell(cur_row + 1, 5 + xlsx_col).value
-            return_assets_dict['assets_at_start'] = assets_at_start
-            return_assets_dict['assets_at_end'] = assets_at_end
+            return_assets_dict['assets_at_start'].append(assets_at_start)
+            return_assets_dict['assets_at_end'].append(assets_at_end)
             break  # Выходим так как достигли конца таблицы со средствами
 
         cur_row += 1
     # В старых отчетах исходящий остаток не приводился, присваиваем как входящий остаток
     if return_assets_dict['incoming_amount'] and not return_assets_dict['outgoing_amount']:
-        return_assets_dict['outgoing_amount'] = return_assets_dict['incoming_amount']
+        return_assets_dict['outgoing_amount'].append(return_assets_dict['incoming_amount'][0])
 
     return return_assets_dict
 
@@ -106,8 +138,8 @@ def parse_trade_tables(return_trade_dict, ws, cur_row, xlsx_col, table_name):
         nkd = float(ws.cell(cur_row + temp_row + 2, xlsx_col + not_cancel_col + 14).value)
         return_trade_dict['nkd'].append(nkd)
         # Комиссия торговой системы
-        commission_TS = float(ws.cell(cur_row + temp_row + 2, xlsx_col + not_cancel_col + 15).value)
-        return_trade_dict['commission_ts'].append(commission_TS)
+        commission_ts = float(ws.cell(cur_row + temp_row + 2, xlsx_col + not_cancel_col + 15).value)
+        return_trade_dict['commission_ts'].append(commission_ts)
         # Клиринговая комиссия
         commission_klir = float(ws.cell(cur_row + temp_row + 2, xlsx_col + not_cancel_col + 16).value)
         return_trade_dict['commission_klir'].append(commission_klir)
@@ -127,33 +159,7 @@ def parse_excel_report(file_name_parse):
     """Парсим файл с ежедневным отчетом и
      возвращаем словарь с активами return_assets_dict, словарь с портфелем return_portfolio_dict
      и словарь со сделками return_trade_dict"""
-    # Возвращаемые словари
-    # Словарь активов на день
-    return_assets_dict = {'time_report': None,
-                          'incoming_amount': None,
-                          'outgoing_amount': None,
-                          'credit_customer': None,
-                          'credit_corporate': None,
-                          'assets_at_start': None,
-                          'assets_at_end': None}
-    # Таблица сделок
-    return_trade_dict = {'date_time_trade': [],
-                         'date_time_execution': [],
-                         'number_trade': [],
-                         'name_paper': [],
-                         'isin': [],
-                         'reg_num': [],
-                         'type_trade': [],
-                         'volume': [],
-                         'transac_price': [],
-                         'transac_amount': [],
-                         'nkd': [],
-                         'commission_ts': [],
-                         'commission_klir': [],
-                         'commission_its': [],
-                         'commission_brok': []}
-    # Состояние портфеля на день
-    return_portfolio_dict = {}
+
     # Расширение файла
     file_ext = file_name_parse.split(".")[-1]
 
@@ -172,6 +178,7 @@ def parse_excel_report(file_name_parse):
         ws_rows = ws.max_row
         xlsx_col = 1                # В openpyxl отсчет столбцов начинается с 1
 
+    return_assets_dict, return_trade_dict, return_portfolio_dict = list_of_dict()
     # Пробегаем файл по строчкам
     # Разбираем таблицу активов на день
     return_assets_dict = parse_assets_table(return_assets_dict, ws, ws_rows, xlsx_col)
@@ -198,7 +205,7 @@ def parse_excel_report(file_name_parse):
 
         cur_row += 1
 
-    return return_assets_dict, return_portfolio_dict, return_trade_dict
+    return return_assets_dict, return_trade_dict, return_portfolio_dict
 
 
 if __name__ == "__main__":
@@ -208,16 +215,23 @@ if __name__ == "__main__":
     # print(file_list)
 
     db = sq.SQLiter("portfolio.db")
-    db.create_table()
-    db.create_table_trade()
+    assets_dict, trade_dict, _ = list_of_dict()
+    db.create_table(assets_dict,
+                    type_list=["CHAR(64)"] + ["FLOAT"] * 6,
+                    table_name='assets')
+    db.create_table(trade_dict,
+                    type_list=["CHAR(64)"] * 2 + ["BIGINT", "CHAR(256)"] + ["CHAR(64)"] * 3 + ["INT"] + ["FLOAT"] * 7,
+                    table_name='trades')
 
     for count, file_n in enumerate(file_list):
-        assets_dict, portfolio_dict, trade_dict = parse_excel_report(file_n)
-        # print(trade_dict)
-        # print(assets_dict)
-        db.insert_data(assets_dict)
-        db.insert_data_trade(trade_dict)
         file_name = file_n.split("\\")[-1]
         print(f"Отчет № {str(count)} из {len(file_list)} - {file_name}")
-    #
+
+        assets_dict, trade_dict, portfolio_dict = parse_excel_report(file_n)
+        print(trade_dict)
+        print(assets_dict)
+
+        db.insert_data(assets_dict, "assets")
+        db.insert_data(trade_dict, "trades")
+
     db.close()
