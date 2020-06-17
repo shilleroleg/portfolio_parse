@@ -1,4 +1,3 @@
-# import pandas as pd
 import os
 import openpyxl as oxl
 import xlrd
@@ -7,15 +6,61 @@ from datetime import datetime
 import get_file_list as gfl
 import sql_database as sq
 
+# TODO
+# 1. Добавить trade_dict в базу данных
+# 2. Избавляться от дубликатов сделок
+# 3. Составить портфель по сделкам
 
-def parse_trade_dict(return_trade_dict, ws, cur_row, xlsx_col, table_name):
+
+def parse_assets_table(return_assets_dict, ws, ws_rows, xlsx_col):
+    """Разбираем таблицу Сводная информация по счетам клиента в валюте счета
+    Она одна и в находится в начале.
+    Возвращаем словарь return_assets_dict, который принимаем на вход пустым
+    """
+    cur_row = 1
+    while cur_row < ws_rows:
+        # Дата отчета
+        if ws.cell(cur_row, xlsx_col).value == "ПериодДат":
+            time_rep = datetime.strptime(ws.cell(cur_row, 3 + xlsx_col).value.split(" ")[-1], '%d.%m.%Y')  # In datetime
+            return_assets_dict['time_report'] = time_rep.strftime('%d.%m.%Y')  # In str
+        # Входящая сумма средств на счете
+        if ws.cell(cur_row, xlsx_col).value == "100":
+            incoming_amount = ws.cell(cur_row, 5 + xlsx_col).value
+            return_assets_dict['incoming_amount'] = incoming_amount
+        # Начислено клиентом и в рамках корпоративных действий
+        if ws.cell(cur_row, xlsx_col).value == "230":
+            credit_customer = ws.cell(cur_row, 5 + xlsx_col).value
+            credit_corporate = ws.cell(cur_row + 1, 5 + xlsx_col).value
+            return_assets_dict['credit_customer'] = credit_customer
+            return_assets_dict['credit_corporate'] = credit_corporate
+        # Исходящая сумма средств на счете
+        if ws.cell(cur_row, xlsx_col).value == "2250":
+            outgoing_amount = ws.cell(cur_row, 5 + xlsx_col).value
+            return_assets_dict['outgoing_amount'] = outgoing_amount
+        # Сумма активов на начало и конец дня
+        if ws.cell(cur_row, xlsx_col).value == "2600":
+            assets_at_start = ws.cell(cur_row, 5 + xlsx_col).value
+            assets_at_end = ws.cell(cur_row + 1, 5 + xlsx_col).value
+            return_assets_dict['assets_at_start'] = assets_at_start
+            return_assets_dict['assets_at_end'] = assets_at_end
+            break  # Выходим так как достигли конца таблицы со средствами
+
+        cur_row += 1
+    # В старых отчетах исходящий остаток не приводился, присваиваем как входящий остаток
+    if return_assets_dict['incoming_amount'] and not return_assets_dict['outgoing_amount']:
+        return_assets_dict['outgoing_amount'] = return_assets_dict['incoming_amount']
+
+    return return_assets_dict
+
+
+def parse_trade_tables(return_trade_dict, ws, cur_row, xlsx_col, table_name):
     """Разбираем таблицы сделок. Их три:
     Сделки, совершенные с ЦБ на биржевых торговых площадках (Фондовый рынок) с расчетами в дату заключения;
     Сделки, совершенные с ЦБ на биржевых торговых площадках (Фондовый рынок) с расчетами Т+,
     незавершенные в отчетном периоде;
     Сделки, совершенные с ЦБ на биржевых торговых площадках (Фондовый рынок) с расчетами Т+,
     рассчитанные в отчетном периоде
-    Возвращаем словарь return_trade_dict, который принимаемн а вход пустым
+    Возвращаем словарь return_trade_dict, который принимаем на вход пустым
     """
     temp_row = 0
     not_cancel_col = 0
@@ -127,62 +172,32 @@ def parse_excel_report(file_name_parse):
         xlsx_col = 1                # В openpyxl отсчет столбцов начинается с 1
 
     # Пробегаем файл по строчкам
-    # Заполняем словарь активов на день
-    cur_row = 1
-    while cur_row < ws_rows:
-        cell_name = "A" + str(cur_row)
-        # Дата отчета
-        if ws.cell(cur_row, xlsx_col).value == "ПериодДат":
-            time_rep = datetime.strptime(ws.cell(cur_row, 3 + xlsx_col).value.split(" ")[-1], '%d.%m.%Y')  # In datetime
-            return_assets_dict['time_report'] = time_rep.strftime('%d.%m.%Y')                        # In str
-        # Входящая сумма средств на счете
-        if ws.cell(cur_row, xlsx_col).value == "100":
-            incoming_amount = ws.cell(cur_row, 5 + xlsx_col).value
-            return_assets_dict['incoming_amount'] = incoming_amount
-        # Начислено клиентом и в рамках корпоративных действий
-        if ws.cell(cur_row, xlsx_col).value == "230":
-            credit_customer = ws.cell(cur_row, 5 + xlsx_col).value
-            credit_corporate = ws.cell(cur_row + 1, 5 + xlsx_col).value
-            return_assets_dict['credit_customer'] = credit_customer
-            return_assets_dict['credit_corporate'] = credit_corporate
-        # Исходящая сумма средств на счете
-        if ws.cell(cur_row, xlsx_col).value == "2250":
-            outgoing_amount = ws.cell(cur_row, 5 + xlsx_col).value
-            return_assets_dict['outgoing_amount'] = outgoing_amount
-        # Сумма активов на начало и конец дня
-        if ws.cell(cur_row, xlsx_col).value == "2600":
-            assets_at_start = ws.cell(cur_row, 5 + xlsx_col).value
-            assets_at_end = ws.cell(cur_row + 1, 5 + xlsx_col).value
-            return_assets_dict['assets_at_start'] = assets_at_start
-            return_assets_dict['assets_at_end'] = assets_at_end
-            break                     # Выходим так как достигли конца таблицы со средствами
-
-        cur_row += 1
-    # В старых отчетах исходящий остаток не приводился, присваиваем как входящий остаток
-    if return_assets_dict['incoming_amount'] and not return_assets_dict['outgoing_amount']:
-        return_assets_dict['outgoing_amount'] = return_assets_dict['incoming_amount']
+    # Разбираем таблицу активов на день
+    return_assets_dict = parse_assets_table(return_assets_dict, ws, ws_rows, xlsx_col)
 
     # Разбираем таблицы сделок
+    cur_row = 60
     while cur_row < ws_rows:
         if str(ws.cell(cur_row, xlsx_col + 1).value).endswith('с расчетами в дату заключения'):
-            return_trade_dict = parse_trade_dict(return_trade_dict,
-                                                 ws,
-                                                 cur_row,
-                                                 xlsx_col,
-                                                 table_name='с расчетами в дату заключения')
+            return_trade_dict = parse_trade_tables(return_trade_dict, ws,
+                                                   cur_row, xlsx_col,
+                                                   table_name='с расчетами в дату заключения')
+            # Если прочитали в таблицу, то шагаем сразу на 6 строк (минимум в таблице)
+            cur_row += 6
+            continue
 
         if str(ws.cell(cur_row, xlsx_col + 1).value).endswith('незавершенные в отчетном периоде') \
                 or str(ws.cell(cur_row, xlsx_col + 1).value).endswith('рассчитанные в отчетном периоде'):
-            return_trade_dict = parse_trade_dict(return_trade_dict,
-                                                 ws,
-                                                 cur_row,
-                                                 xlsx_col,
-                                                 table_name='незавершенные в отчетном периоде')
+            return_trade_dict = parse_trade_tables(return_trade_dict, ws,
+                                                   cur_row, xlsx_col,
+                                                   table_name='незавершенные в отчетном периоде')
+            # Если прочитали в таблицу, то шагаем сразу на 6 строк (минимум в таблице)
+            cur_row += 6
+            continue
+
         cur_row += 1
 
-    print(return_trade_dict)
-
-    return return_assets_dict, return_portfolio_dict
+    return return_assets_dict, return_portfolio_dict, return_trade_dict
 
 
 if __name__ == "__main__":
@@ -195,9 +210,10 @@ if __name__ == "__main__":
     db.create_table()
 
     for count, file_n in enumerate(file_list):
-        assets_dict, portfolio_dict = parse_excel_report(file_n)
-        # print(assets_dict)
-        # db.insert_data(assets_dict)
+        assets_dict, portfolio_dict, trade_dict = parse_excel_report(file_n)
+        print(trade_dict)
+        print(assets_dict)
+        db.insert_data(assets_dict)
         file_name = file_n.split("\\")[-1]
         print(f"Отчет № {str(count)} из {len(file_list)} - {file_name}")
     #
