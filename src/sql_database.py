@@ -16,13 +16,34 @@ class SQLiter:
     def create_table(self):
         self.cursor.execute("CREATE TABLE IF NOT EXISTS assets("
                             "id integer PRIMARY KEY,"
-                            "time_report CHAR(20),"
+                            "time_report CHAR(64),"
                             "incoming_amount FLOAT,"
                             "outgoing_amount FLOAT,"
                             "credit_customer FLOAT,"
                             "credit_corporate FLOAT,"
                             "assets_at_start FLOAT,"
                             "assets_at_end FLOAT)")
+        # Метод commit() сохраняет все сделанные изменения
+        self.connection.commit()
+
+    def create_table_trade(self):
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS trades("
+                            "id integer PRIMARY KEY,"
+                            "date_time_trade CHAR(64),"
+                            "date_time_execution CHAR(64),"
+                            "number_trade BIGINT,"
+                            "name_paper CHAR(256),"
+                            "isin CHAR(64),"
+                            "reg_num CHAR(64),"
+                            "type_trade CHAR(8),"
+                            "volume INT,"
+                            "transac_price FLOAT,"
+                            "transac_amount FLOAT,"
+                            "nkd FLOAT,"
+                            "commission_ts FLOAT,"
+                            "commission_klir FLOAT,"
+                            "commission_its FLOAT,"
+                            "commission_brok FLOAT)")
         # Метод commit() сохраняет все сделанные изменения
         self.connection.commit()
 
@@ -44,6 +65,46 @@ class SQLiter:
                                         data["credit_corporate"],
                                         data["assets_at_start"],
                                         data["assets_at_end"]))
+
+    def insert_data_trade(self, data):
+        """Добавляем сделки"""
+        # Добавляем только если не пустой словарь
+        if list(data.values())[0]:
+            print(data['date_time_trade'])
+            for i in range(len(data['date_time_trade'])):
+                print(len(data['date_time_trade']), i)
+                self.cursor.execute("INSERT OR IGNORE INTO trades("
+                                    "date_time_trade,"
+                                    "date_time_execution,"
+                                    "number_trade,"
+                                    "name_paper,"
+                                    "isin,"
+                                    "reg_num,"
+                                    "type_trade,"
+                                    "volume,"
+                                    "transac_price,"
+                                    "transac_amount,"
+                                    "nkd,"
+                                    "commission_ts,"
+                                    "commission_klir,"
+                                    "commission_its,"
+                                    "commission_brok) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                                    (data['date_time_trade'][i],
+                                     data['date_time_execution'][i],
+                                     data['number_trade'][i],
+                                     data['name_paper'][i],
+                                     data['isin'][i],
+                                     data['reg_num'][i],
+                                     data['type_trade'][i],
+                                     data['volume'][i],
+                                     data['transac_price'][i],
+                                     data['transac_amount'][i],
+                                     data['nkd'][i],
+                                     data['commission_ts'][i],
+                                     data['commission_klir'][i],
+                                     data['commission_its'][i],
+                                     data['commission_brok'][i]))
+                self.connection.commit()
 
     def find_duplicates(self, find_table="assets", find_col="time_report"):
         """Ищем строки дубликаты по времени"""

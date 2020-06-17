@@ -7,7 +7,7 @@ import get_file_list as gfl
 import sql_database as sq
 
 # TODO
-# 1. Добавить trade_dict в базу данных
+# 1. Отрефакторить создание таблиц в БД и вставку данных
 # 2. Избавляться от дубликатов сделок
 # 3. Составить портфель по сделкам
 
@@ -107,7 +107,7 @@ def parse_trade_tables(return_trade_dict, ws, cur_row, xlsx_col, table_name):
         return_trade_dict['nkd'].append(nkd)
         # Комиссия торговой системы
         commission_TS = float(ws.cell(cur_row + temp_row + 2, xlsx_col + not_cancel_col + 15).value)
-        return_trade_dict['commission_TS'].append(commission_TS)
+        return_trade_dict['commission_ts'].append(commission_TS)
         # Клиринговая комиссия
         commission_klir = float(ws.cell(cur_row + temp_row + 2, xlsx_col + not_cancel_col + 16).value)
         return_trade_dict['commission_klir'].append(commission_klir)
@@ -125,7 +125,8 @@ def parse_trade_tables(return_trade_dict, ws, cur_row, xlsx_col, table_name):
 
 def parse_excel_report(file_name_parse):
     """Парсим файл с ежедневным отчетом и
-     возвращаем словарь с активами assets_dict и словарь с портфелем portfolio_dict"""
+     возвращаем словарь с активами return_assets_dict, словарь с портфелем return_portfolio_dict
+     и словарь со сделками return_trade_dict"""
     # Возвращаемые словари
     # Словарь активов на день
     return_assets_dict = {'time_report': None,
@@ -147,7 +148,7 @@ def parse_excel_report(file_name_parse):
                          'transac_price': [],
                          'transac_amount': [],
                          'nkd': [],
-                         'commission_TS': [],
+                         'commission_ts': [],
                          'commission_klir': [],
                          'commission_its': [],
                          'commission_brok': []}
@@ -208,12 +209,14 @@ if __name__ == "__main__":
 
     db = sq.SQLiter("portfolio.db")
     db.create_table()
+    db.create_table_trade()
 
     for count, file_n in enumerate(file_list):
         assets_dict, portfolio_dict, trade_dict = parse_excel_report(file_n)
-        print(trade_dict)
-        print(assets_dict)
+        # print(trade_dict)
+        # print(assets_dict)
         db.insert_data(assets_dict)
+        db.insert_data_trade(trade_dict)
         file_name = file_n.split("\\")[-1]
         print(f"Отчет № {str(count)} из {len(file_list)} - {file_name}")
     #
