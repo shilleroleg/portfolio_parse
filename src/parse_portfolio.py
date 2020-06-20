@@ -52,25 +52,30 @@ def parse_assets_table(return_assets_dict, ws, ws_rows, xlsx_col):
     cur_row = 1
     while cur_row < ws_rows:
         # Дата отчета
-        if ws.cell(cur_row, xlsx_col).value == "ПериодДат":
+        if ws.cell(cur_row, xlsx_col).value == "ПериодДат" \
+                or ws.cell(cur_row, 1 + xlsx_col).value == "ОТЧЕТ БРОКЕРА":
             time_rep = datetime.strptime(ws.cell(cur_row, 3 + xlsx_col).value.split(" ")[-1], '%d.%m.%Y')  # In datetime
             return_assets_dict['time_report'].append(time_rep.strftime('%d.%m.%Y'))  # In str
         # Входящая сумма средств на счете
-        if ws.cell(cur_row, xlsx_col).value == "100":
+        if ws.cell(cur_row, xlsx_col).value == "100" \
+                or ws.cell(cur_row, 1 + xlsx_col).value == "ВХОДЯЩАЯ СУММА СРЕДСТВ НА СЧЕТЕ":
             incoming_amount = ws.cell(cur_row, 5 + xlsx_col).value
             return_assets_dict['incoming_amount'].append(incoming_amount)
         # Начислено клиентом и в рамках корпоративных действий
-        if ws.cell(cur_row, xlsx_col).value == "230":
-            credit_customer = ws.cell(cur_row, 5 + xlsx_col).value
-            credit_corporate = ws.cell(cur_row + 1, 5 + xlsx_col).value
+        if ws.cell(cur_row, xlsx_col).value == "200" \
+                or ws.cell(cur_row, 1 + xlsx_col).value == "ЗАЧИСЛЕНО НА СЧЕТ":
+            credit_customer = ws.cell(cur_row + 1, 5 + xlsx_col).value
+            credit_corporate = ws.cell(cur_row + 2, 5 + xlsx_col).value
             return_assets_dict['credit_customer'].append(credit_customer)
             return_assets_dict['credit_corporate'].append(credit_corporate)
         # Исходящая сумма средств на счете
-        if ws.cell(cur_row, xlsx_col).value == "2250":
+        if ws.cell(cur_row, xlsx_col).value == "2200" \
+                or ws.cell(cur_row, 1 + xlsx_col).value == "ОСТАТОК СРЕДСТВ НА СЧЕТЕ":
             outgoing_amount = ws.cell(cur_row, 5 + xlsx_col).value
             return_assets_dict['outgoing_amount'].append(outgoing_amount)
         # Сумма активов на начало и конец дня
-        if ws.cell(cur_row, xlsx_col).value == "2600":
+        if ws.cell(cur_row, xlsx_col).value == "2600" \
+                or ws.cell(cur_row, 1 + xlsx_col).value == '"СУММА АКТИВОВ" на начало дня':
             assets_at_start = ws.cell(cur_row, 5 + xlsx_col).value
             assets_at_end = ws.cell(cur_row + 1, 5 + xlsx_col).value
             return_assets_dict['assets_at_start'].append(assets_at_start)
@@ -78,9 +83,6 @@ def parse_assets_table(return_assets_dict, ws, ws_rows, xlsx_col):
             break  # Выходим так как достигли конца таблицы со средствами
 
         cur_row += 1
-    # В старых отчетах исходящий остаток не приводился, присваиваем как входящий остаток
-    if return_assets_dict['incoming_amount'] and not return_assets_dict['outgoing_amount']:
-        return_assets_dict['outgoing_amount'].append(return_assets_dict['incoming_amount'][0])
 
     return return_assets_dict
 
@@ -210,8 +212,8 @@ def parse_excel_report(file_name_parse):
 
 if __name__ == "__main__":
     # Получаем список всех файлов с отчетами
-    file_list = gfl.get_file_list(os.getcwd() + "\\report\\")
-    # file_list = gfl.get_file_list("d:\\olega\\Финансы\\Брокер\\Отчеты ПСБ\\")
+    # file_list = gfl.get_file_list(os.getcwd() + "\\report\\")
+    file_list = gfl.get_file_list("d:\\olega\\Финансы\\Брокер\\Отчеты ПСБ\\")
     # print(file_list)
 
     db = sq.SQLiter("portfolio.db")
@@ -228,8 +230,8 @@ if __name__ == "__main__":
         print(f"Отчет № {str(count)} из {len(file_list)} - {file_name}")
 
         assets_dict, trade_dict, portfolio_dict = parse_excel_report(file_n)
-        print(trade_dict)
-        print(assets_dict)
+        # print(trade_dict)
+        # print(assets_dict)
 
         db.insert_data(assets_dict, "assets")
         db.insert_data(trade_dict, "trades")
