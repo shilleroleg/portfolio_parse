@@ -61,6 +61,12 @@ class SQLiter:
                             " HAVING COUNT(*) > 1")
         return self.cursor.fetchall()
 
+    def get_list_filename(self, find_table="assets"):
+        """Получаем из базы данных список файлов из которых уже загружены данные"""
+        sql_query = "SELECT file_name FROM {0}".format(find_table)
+        self.cursor.execute(sql_query)
+        return self.cursor.fetchall()
+
     def delete_row(self, del_table, del_id):
         """Удаляем строку из таблицы del_table по id del_id"""
         sql_delete_query = "DELETE FROM " + del_table + " WHERE id = " + str(del_id)

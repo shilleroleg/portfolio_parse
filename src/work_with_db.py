@@ -1,5 +1,6 @@
 import sql_database as sq
 
+
 # TODO добавить рекурсивный вызов функции для удаления более чем одного дубликата за раз
 # SELECT `COLUMN` FROM `table` WHERE `COLUMN` IN (SELECT `COLUMN` FROM `table` GROUP BY `COLUMN` HAVING count(*)>1);
 def find_and_del_duplicates(f_table, f_col):

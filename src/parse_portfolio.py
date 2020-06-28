@@ -21,7 +21,8 @@ def list_of_dict():
                     'credit_customer': [],
                     'credit_corporate': [],
                     'assets_at_start': [],
-                    'assets_at_end': []}
+                    'assets_at_end': [],
+                    'file_name': []}
     # Таблица сделок
     trade_dict_ = {'date_time_trade': [],
                    'date_time_execution': [],
@@ -44,11 +45,12 @@ def list_of_dict():
     return assets_dict_, trade_dict_, portfolio_dict_
 
 
-def parse_assets_table(return_assets_dict, ws, ws_rows, xlsx_col):
+def parse_assets_table(file_name_a, return_assets_dict, ws, ws_rows, xlsx_col):
     """Разбираем таблицу Сводная информация по счетам клиента в валюте счета
     Она одна и в находится в начале.
     Возвращаем словарь return_assets_dict, который принимаем на вход пустым
     """
+    return_assets_dict['file_name'].append(file_name_a)
     cur_row = 1
     while cur_row < ws_rows:
         # Дата отчета
@@ -183,7 +185,7 @@ def parse_excel_report(file_name_parse):
     return_assets_dict, return_trade_dict, return_portfolio_dict = list_of_dict()
     # Пробегаем файл по строчкам
     # Разбираем таблицу активов на день
-    return_assets_dict = parse_assets_table(return_assets_dict, ws, ws_rows, xlsx_col)
+    return_assets_dict = parse_assets_table(file_name_parse, return_assets_dict, ws, ws_rows, xlsx_col)
 
     # Разбираем таблицы сделок
     cur_row = 60
@@ -212,19 +214,29 @@ def parse_excel_report(file_name_parse):
 
 if __name__ == "__main__":
     # Получаем список всех файлов с отчетами
-    # file_list = gfl.get_file_list(os.getcwd() + "\\report\\")
-    file_list = gfl.get_file_list("d:\\olega\\Финансы\\Брокер\\Отчеты ПСБ\\")
+    full_file_list = gfl.get_file_list(os.getcwd() + "\\report\\")
+    # file_list = gfl.get_file_list("d:\\olega\\Финансы\\Брокер\\Отчеты ПСБ\\")
     # print(file_list)
 
+    # Создаем базу данных если еще не создавалась
     db = sq.SQLiter("portfolio.db")
+    # Создаем таблицы если еще не создавались
     assets_dict, trade_dict, _ = list_of_dict()
     db.create_table(assets_dict,
-                    type_list=["CHAR(64)"] + ["FLOAT"] * 6,
+                    type_list=["CHAR(64)"] + ["FLOAT"] * 6 + ["CHAR"],
                     table_name='assets')
     db.create_table(trade_dict,
                     type_list=["CHAR(64)"] * 2 + ["BIGINT", "CHAR(256)"] + ["CHAR(64)"] * 3 + ["INT"] + ["FLOAT"] * 7,
                     table_name='trades')
 
+    # Получаем список файлов уже хранящихся в базе данных
+    exist_tuple = db.get_list_filename("assets")
+    exist_files = [value for value, in exist_tuple]
+
+    # Сравниваем два списка и оставляем только новые файлы которых нет в базе данных
+    file_list = gfl.get_unique_file(full_file_list, exist_files)
+
+    # Добавляем данные из файлов с отчетами в базу данных
     for count, file_n in enumerate(file_list):
         file_name = file_n.split("\\")[-1]
         print(f"Отчет № {str(count)} из {len(file_list)} - {file_name}")
