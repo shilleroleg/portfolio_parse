@@ -53,6 +53,12 @@ class SQLiter:
                 self.cursor.execute(sql, [row[i] for row in tuple(data.values())])
                 self.connection.commit()
 
+    def get_trade_data(self, table_name, col_name, need_data):
+        """"""
+        sql_query = 'SELECT * FROM {0} WHERE {1} = "{2}"'.format(table_name, col_name, need_data)
+        self.cursor.execute(sql_query)
+        return self.cursor.fetchall()
+
     def find_duplicates(self, find_table="assets", find_col="time_report"):
         """Ищем строки дубликаты по времени"""
         self.cursor.execute("SELECT id, " + find_col + ", COUNT(*) "
