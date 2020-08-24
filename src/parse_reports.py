@@ -8,7 +8,6 @@ import sql_database as sq
 
 # TODO
 # 1. Отрефакторить создание таблиц в БД и вставку данных
-# 2. Избавляться от дубликатов сделок
 # 3. Составить портфель по сделкам
 
 
@@ -32,11 +31,11 @@ def list_of_dict():
                    'reg_num': [],
                    'type_trade': [],
                    'volume': [],
-                   'transac_price': [],
-                   'transac_amount': [],
+                   'transact_price': [],
+                   'transact_amount': [],
                    'nkd': [],
                    'commission_ts': [],
-                   'commission_klir': [],
+                   'commission_clear': [],
                    'commission_its': [],
                    'commission_brok': []}
     # Состояние портфеля на день
@@ -133,11 +132,11 @@ def parse_trade_tables(return_trade_dict, ws, cur_row, xlsx_col, table_name):
         volume = int(ws.cell(cur_row + temp_row + 2, xlsx_col + not_cancel_col + 10).value)
         return_trade_dict['volume'].append(volume)
         # Цена (% для обл)
-        transac_price = float(ws.cell(cur_row + temp_row + 2, xlsx_col + not_cancel_col + 12).value)
-        return_trade_dict['transac_price'].append(transac_price)
+        transact_price = float(ws.cell(cur_row + temp_row + 2, xlsx_col + not_cancel_col + 12).value)
+        return_trade_dict['transact_price'].append(transact_price)
         # Сумма сделки без НКД
-        transac_amount = float(ws.cell(cur_row + temp_row + 2, xlsx_col + not_cancel_col + 13).value)
-        return_trade_dict['transac_amount'].append(transac_amount)
+        transact_amount = float(ws.cell(cur_row + temp_row + 2, xlsx_col + not_cancel_col + 13).value)
+        return_trade_dict['transact_amount'].append(transact_amount)
         # НКД
         nkd = float(ws.cell(cur_row + temp_row + 2, xlsx_col + not_cancel_col + 14).value)
         return_trade_dict['nkd'].append(nkd)
@@ -145,8 +144,8 @@ def parse_trade_tables(return_trade_dict, ws, cur_row, xlsx_col, table_name):
         commission_ts = float(ws.cell(cur_row + temp_row + 2, xlsx_col + not_cancel_col + 15).value)
         return_trade_dict['commission_ts'].append(commission_ts)
         # Клиринговая комиссия
-        commission_klir = float(ws.cell(cur_row + temp_row + 2, xlsx_col + not_cancel_col + 16).value)
-        return_trade_dict['commission_klir'].append(commission_klir)
+        commission_clear = float(ws.cell(cur_row + temp_row + 2, xlsx_col + not_cancel_col + 16).value)
+        return_trade_dict['commission_clear'].append(commission_clear)
         # Комиссия за ИТС
         commission_its = float(ws.cell(cur_row + temp_row + 2, xlsx_col + not_cancel_col + 17).value)
         return_trade_dict['commission_its'].append(commission_its)
@@ -239,7 +238,7 @@ if __name__ == "__main__":
     # Добавляем данные из файлов с отчетами в базу данных
     for count, file_n in enumerate(file_list):
         file_name = file_n.split("\\")[-1]
-        print(f"Отчет № {str(count)} из {len(file_list)} - {file_name}")
+        print(f"Отчет № {str(count + 1)} из {len(file_list)} - {file_name}")
 
         assets_dict, trade_dict, portfolio_dict = parse_excel_report(file_n)
         # print(trade_dict)

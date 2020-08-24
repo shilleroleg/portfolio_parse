@@ -133,7 +133,6 @@ if __name__ == "__main__":
     if flag < len(portfolio_dict.keys()):
         print("!!")
 
-
     # db.insert_data(portfolio_dict)
 
     # ans = db.find_duplicates(find_table="assets", find_col="time_report")
@@ -148,5 +147,3 @@ if __name__ == "__main__":
     #     print(ids, count)
 
     db.close()
-
-

@@ -8,7 +8,7 @@ import sql_database as sq
 def find_and_del_duplicates(f_table, f_col):
     db = sq.SQLiter("portfolio.db")
     ans = db.find_duplicates(find_table=f_table, find_col=f_col)
-    print(ans)
+    # print(ans)
 
     for an in ans:
         ids = an[0]
@@ -22,7 +22,7 @@ def find_and_del_duplicates(f_table, f_col):
 
 def get_trades(type_trades="buy"):
     db = sq.SQLiter("portfolio.db")
-    ans = db.get_trade_data(table_name="trades", col_name="type_trade", need_data="buy")
+    ans = db.get_trade_data(table_name="trades", col_name="type_trade", need_data=type_trades)
     # Сортируем полученные данные по дате
     ans.sort(key=lambda tup: datetime.datetime.strptime(tup[1], '%d.%m.%Y %H:%M:%S'))
 
@@ -35,21 +35,35 @@ def get_trades(type_trades="buy"):
                      "number_trade": [an[3]],
                      "date_time_trade": [an[1]],
                      "volume": [an[8]],
-                     "transac_price": [an[9]]}
+                     "transact_price": [an[9]]}
 
             trades[isin] = trade
         else:
             trades[isin]["number_trade"].append(an[3])
             trades[isin]["date_time_trade"].append(an[1])
             trades[isin]["volume"].append(an[8])
-            trades[isin]["transac_price"].append(an[9])
+            trades[isin]["transact_price"].append(an[9])
 
     return trades
+
+
+def create_portfolio_from_buy_sell(trades_buy, trades_sell):
+
+    buy_keys = trades_buy.keys()
+    sell_keys = trades_sell.keys()
+
+    for sell_key in sell_keys:
+        if sell_key in buy_keys:
+            print(trades_buy[sell_key], "\n", trades_sell[sell_key])
+            print()
 
 
 if __name__ == "__main__":
     # find_and_del_duplicates(f_table="trades", f_col="number_trade")
     # find_and_del_duplicates(f_table="assets", f_col="time_report")
+    #
     trades_buy = get_trades("buy")
-    print(trades_buy["RU000A0JP5V6"])
+    trades_sell = get_trades("sell")
+    # print(trades_buy)
+    create_portfolio_from_buy_sell(trades_buy, trades_sell)
 
