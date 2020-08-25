@@ -95,7 +95,7 @@ def parse_trade_tables(return_trade_dict, ws, cur_row, xlsx_col, table_name):
     незавершенные в отчетном периоде;
     Сделки, совершенные с ЦБ на биржевых торговых площадках (Фондовый рынок) с расчетами Т+,
     рассчитанные в отчетном периоде
-    Возвращаем словарь return_trade_dict, который принимаем на вход пустым
+    Возвращаем словарь return_trade_dict, который принимаем на вход
     """
     temp_row = 0
     not_cancel_col = 0
@@ -158,6 +158,56 @@ def parse_trade_tables(return_trade_dict, ws, cur_row, xlsx_col, table_name):
     return return_trade_dict
 
 
+def parse_repay_tables(return_trade_dict, ws, ws_rows, cur_row, xlsx_col, table_name):
+    """Разбираем таблицу с погашением ЦБ и купонов"""
+    # Пока учитываем только погашение ЦБ
+
+    while cur_row < ws_rows - 2:
+        # print(ws.cell(cur_row, xlsx_col + 2).value)
+        if ws.cell(cur_row, xlsx_col + 2).value == "Погашение бумаг":
+            # Дата и время совершения сделки. Плановая дата исполнения сделки в тот же день
+            date_time_trade = datetime.strptime(ws.cell(cur_row, xlsx_col + 1).value, '%d.%m.%Y')
+            return_trade_dict['date_time_trade'].append(date_time_trade.strftime('%d.%m.%Y'))
+            # Плановая дата исполнения сделки
+            return_trade_dict['date_time_execution'].append(date_time_trade.strftime('%d.%m.%Y'))
+            # Номер сделки в ТС
+            return_trade_dict['number_trade'].append(0)
+            # Наименование эмитента, вид, категория (тип), выпуск, транш ЦБ
+            name_paper = ws.cell(cur_row, xlsx_col + 4).value
+            return_trade_dict['name_paper'].append(name_paper)
+            # ISIN
+            isin = ws.cell(cur_row, xlsx_col + 8).value
+            return_trade_dict['isin'].append(isin)
+            # Номер гос. регистрации
+            reg_num = ws.cell(cur_row, xlsx_col + 9).value
+            return_trade_dict['reg_num'].append(reg_num)
+            # Вид сделки (покупка/продажа)
+            return_trade_dict['type_trade'].append('repay')
+            # Кол-во ЦБ, шт.
+            volume = int(ws.cell(cur_row, xlsx_col + 10).value)
+            return_trade_dict['volume'].append(volume)
+            # Цена (% для обл)
+            return_trade_dict['transact_price'].append(100)
+            # Сумма сделки без НКД
+            transact_amount = float(ws.cell(cur_row, xlsx_col + 13).value)
+            return_trade_dict['transact_amount'].append(transact_amount)
+            # НКД
+            nkd = float(ws.cell(cur_row, xlsx_col + 12).value)
+            return_trade_dict['nkd'].append(nkd)
+            # Комиссия торговой системы
+            return_trade_dict['commission_ts'].append(0)
+            # Клиринговая комиссия
+            return_trade_dict['commission_clear'].append(0)
+            # Комиссия за ИТС
+            return_trade_dict['commission_its'].append(0)
+            # Комиссия брокера
+            return_trade_dict['commission_brok'].append(0)
+
+        cur_row += 1
+
+    return return_trade_dict
+
+
 def parse_excel_report(file_name_parse):
     """Парсим файл с ежедневным отчетом и
      возвращаем словарь с активами return_assets_dict, словарь с портфелем return_portfolio_dict
@@ -193,7 +243,7 @@ def parse_excel_report(file_name_parse):
             return_trade_dict = parse_trade_tables(return_trade_dict, ws,
                                                    cur_row, xlsx_col,
                                                    table_name='с расчетами в дату заключения')
-            # Если прочитали в таблицу, то шагаем сразу на 6 строк (минимум в таблице)
+            # Если прочитали таблицу, то шагаем сразу на 6 строк (минимум в таблице)
             cur_row += 6
             continue
 
@@ -202,8 +252,18 @@ def parse_excel_report(file_name_parse):
             return_trade_dict = parse_trade_tables(return_trade_dict, ws,
                                                    cur_row, xlsx_col,
                                                    table_name='незавершенные в отчетном периоде')
-            # Если прочитали в таблицу, то шагаем сразу на 6 строк (минимум в таблице)
+            # Если прочитали таблицу, то шагаем сразу на 6 строк (минимум в таблице)
             cur_row += 6
+            continue
+
+        # Дополнительно разбираем таблицу с погашением облигаций и купонов.
+        # Будем записывать, как особую операцию - repay
+        if str(ws.cell(cur_row, xlsx_col + 1).value).endswith('Погашение купонов и ЦБ'):
+            return_trade_dict = parse_repay_tables(return_trade_dict, ws, ws_rows,
+                                                   cur_row, xlsx_col,
+                                                   table_name='Погашение купонов и ЦБ')
+            print("!!")
+            cur_row += 1
             continue
 
         cur_row += 1
