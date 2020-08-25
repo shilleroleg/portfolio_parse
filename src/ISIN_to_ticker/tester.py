@@ -1,5 +1,5 @@
 from MorningStar_wrapper import Wrapper
 
-isin = 'US0010551028'
+isin = 'RU000A0JPVK8'
 w = Wrapper(isin)
 print(w.getTicker())

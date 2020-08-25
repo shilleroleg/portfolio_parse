@@ -52,6 +52,11 @@ def create_portfolio_from_buy_sell(trades_buy, trades_sell):
     buy_keys = trades_buy.keys()
     sell_keys = trades_sell.keys()
 
+    full_portfolio = {}
+
+    # for buy_key in buy_keys:
+    #     print(trades_buy[buy_key]["volume"], "\t", trades_buy[buy_key]["transact_price"])
+
     for sell_key in sell_keys:
         if sell_key in buy_keys:
             print(trades_buy[sell_key], "\n", trades_sell[sell_key])
