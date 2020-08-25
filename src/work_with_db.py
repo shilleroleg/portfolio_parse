@@ -51,6 +51,8 @@ def create_portfolio_from_buy_sell(trades_buy, trades_sell):
     buy_keys = trades_buy.keys()
     sell_keys = trades_sell.keys()
 
+    # print(buy_keys)
+
     temp_portfolio = {}
     full_portfolio = {}
 
@@ -60,14 +62,16 @@ def create_portfolio_from_buy_sell(trades_buy, trades_sell):
         vol_buy = sum(trades_buy[buy_key]["volume"])
         if buy_key in sell_keys:
             vol_sell = sum(trades_sell[buy_key]["volume"])
-            temp_portfolio[trades_buy[buy_key]["name_paper"]] = {"volume": vol_buy - vol_sell}
         else:
-            temp_portfolio[trades_buy[buy_key]["name_paper"]] = {"volume": vol_buy}
+            vol_sell = 0
+        temp_portfolio[buy_key] = {"name_paper": trades_buy[buy_key]["name_paper"],
+                                   "volume": vol_buy - vol_sell}
 
     # Из временного словаря в постоянный переносим только записи, где не все бумаги проданы (volume > 0)
     for tp in temp_portfolio.keys():
-        if temp_portfolio[tp]["volume"] > 0:
-            full_portfolio.update({tp: {"volume": temp_portfolio[tp]["volume"]}})
+        if temp_portfolio[tp]["volume"] != 0:
+            full_portfolio.update({tp: {"name_paper": temp_portfolio[tp]["name_paper"],
+                                        "volume": temp_portfolio[tp]["volume"]}})
 
     print(full_portfolio)
 
@@ -78,6 +82,6 @@ if __name__ == "__main__":
     #
     trades_buy = get_trades("buy")
     trades_sell = get_trades("sell")
-    # print(trades_buy)
+
     create_portfolio_from_buy_sell(trades_buy, trades_sell)
 
