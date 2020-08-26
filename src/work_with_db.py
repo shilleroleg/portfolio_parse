@@ -21,7 +21,7 @@ def find_and_del_duplicates(f_table, f_col):
     db.close()
 
 
-def get_trades(type_trades):
+def get_trades(*type_trades):
     db = sq.SQLiter("portfolio.db")
     ans = db.get_trade_data(table_name="trades", col_name="type_trade", need_data=type_trades)
     # Сортируем полученные данные по дате
@@ -48,14 +48,12 @@ def get_trades(type_trades):
     return trades
 
 
-def create_portfolio_from_buy_sell(trades_buy, trades_sell, trades_repay):
+def create_portfolio_from_buy_sell(trades_buy, trades_sell):
     buy_keys = trades_buy.keys()
     sell_keys = trades_sell.keys()
-    repay_keys = trades_repay.keys()
 
     temp_portfolio = {}
     full_portfolio = {}
-
     # Записываем все покупки
     # Если бумага продавалась, записываем объем как разницу между покупкой и продажей
     for buy_key in buy_keys:
@@ -65,13 +63,8 @@ def create_portfolio_from_buy_sell(trades_buy, trades_sell, trades_repay):
         else:
             vol_sell = 0
 
-        if buy_key in repay_keys:
-            vol_rep = sum(trades_repay[buy_key]["volume"])
-        else:
-            vol_rep = 0
-
         temp_portfolio[buy_key] = {"name_paper": trades_buy[buy_key]["name_paper"],
-                                   "volume": vol_buy - vol_sell - vol_rep}
+                                   "volume": vol_buy - vol_sell}
 
     # Из временного словаря в постоянный переносим только записи, где не все бумаги проданы (volume > 0)
     for tp in temp_portfolio.keys():
@@ -79,7 +72,7 @@ def create_portfolio_from_buy_sell(trades_buy, trades_sell, trades_repay):
             full_portfolio.update({tp: {"name_paper": temp_portfolio[tp]["name_paper"],
                                         "volume": temp_portfolio[tp]["volume"]}})
 
-    print(full_portfolio)
+    return full_portfolio
 
 
 if __name__ == "__main__":
@@ -87,8 +80,8 @@ if __name__ == "__main__":
     # find_and_del_duplicates(f_table="assets", f_col="time_report")
     #
     trades_buy = get_trades("buy")           # Выбираем все покупки
-    trades_sell = get_trades("sell")         # Выбираем все продажи
-    trades_repay = get_trades("repay")  # Добавляем погашение облигаций
-
-    create_portfolio_from_buy_sell(trades_buy, trades_sell, trades_repay)
+    trades_sell = get_trades("sell", "repay")         # Выбираем все продажи
+    # print(trades_sell)
+    portfolio = create_portfolio_from_buy_sell(trades_buy, trades_sell)
+    print(portfolio)
 

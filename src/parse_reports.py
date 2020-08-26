@@ -262,7 +262,6 @@ def parse_excel_report(file_name_parse):
             return_trade_dict = parse_repay_tables(return_trade_dict, ws, ws_rows,
                                                    cur_row, xlsx_col,
                                                    table_name='Погашение купонов и ЦБ')
-            print("!!")
             cur_row += 1
             continue
 
@@ -273,8 +272,8 @@ def parse_excel_report(file_name_parse):
 
 if __name__ == "__main__":
     # Получаем список всех файлов с отчетами
-    full_file_list = gfl.get_file_list(os.getcwd() + "\\report\\")
-    # full_file_list = gfl.get_file_list("d:\\olega\\Финансы\\Брокер\\Отчеты ПСБ\\")
+    # full_file_list = gfl.get_file_list(os.getcwd() + "\\report\\")
+    full_file_list = gfl.get_file_list("d:\\olega\\Финансы\\Брокер\\Отчеты ПСБ\\")
     # print(file_list)
 
     # Создаем базу данных если еще не создавалась

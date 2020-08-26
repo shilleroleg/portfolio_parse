@@ -55,7 +55,13 @@ class SQLiter:
 
     def get_trade_data(self, table_name, col_name, need_data):
         """"""
-        sql_query = f'SELECT * FROM {table_name} WHERE {col_name} = "{need_data}"'
+        # Обрабатываем возможность подставлять несколько условий после WHERE
+        temp_str = [0]*len(need_data)
+        for count, nd in enumerate(need_data):
+            temp_str[count] = f'{col_name} = "{nd}"'
+        where_str = ' OR '.join(temp_str)
+        # Составляем запрос к БД
+        sql_query = f'SELECT * FROM {table_name} WHERE {where_str}'
         self.cursor.execute(sql_query)
         return self.cursor.fetchall()
 
