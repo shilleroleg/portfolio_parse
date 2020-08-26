@@ -55,27 +55,25 @@ class SQLiter:
 
     def get_trade_data(self, table_name, col_name, need_data):
         """"""
-        sql_query = 'SELECT * FROM {0} WHERE {1} = "{2}"'.format(table_name, col_name, need_data)
+        sql_query = f'SELECT * FROM {table_name} WHERE {col_name} = "{need_data}"'
         self.cursor.execute(sql_query)
         return self.cursor.fetchall()
 
     def find_duplicates(self, find_table="assets", find_col="time_report"):
         """Ищем строки дубликаты по времени"""
-        self.cursor.execute("SELECT id, " + find_col + ", COUNT(*) "
-                            "FROM " + find_table +
-                            " GROUP BY " + find_col +
-                            " HAVING COUNT(*) > 1")
+        sql_query = f'SELECT id, {find_col}, COUNT(*) FROM {find_table} GROUP BY {find_col} HAVING COUNT(*) > 1'
+        self.cursor.execute(sql_query)
         return self.cursor.fetchall()
 
     def get_list_filename(self, find_table="assets"):
         """Получаем из базы данных список файлов из которых уже загружены данные"""
-        sql_query = "SELECT file_name FROM {0}".format(find_table)
+        sql_query = f'SELECT file_name FROM {find_table}'
         self.cursor.execute(sql_query)
         return self.cursor.fetchall()
 
     def delete_row(self, del_table, del_id):
         """Удаляем строку из таблицы del_table по id del_id"""
-        sql_delete_query = "DELETE FROM " + del_table + " WHERE id = " + str(del_id)
+        sql_delete_query = f'DELETE FROM {del_table} WHERE id = {str(del_id)}'
         self.cursor.execute(sql_delete_query)
         self.connection.commit()
 

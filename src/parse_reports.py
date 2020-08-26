@@ -167,7 +167,7 @@ def parse_repay_tables(return_trade_dict, ws, ws_rows, cur_row, xlsx_col, table_
         if ws.cell(cur_row, xlsx_col + 2).value == "Погашение бумаг":
             # Дата и время совершения сделки. Плановая дата исполнения сделки в тот же день
             date_time_trade = datetime.strptime(ws.cell(cur_row, xlsx_col + 1).value, '%d.%m.%Y')
-            return_trade_dict['date_time_trade'].append(date_time_trade.strftime('%d.%m.%Y'))
+            return_trade_dict['date_time_trade'].append(date_time_trade.strftime('%d.%m.%Y %H:%M:%S'))
             # Плановая дата исполнения сделки
             return_trade_dict['date_time_execution'].append(date_time_trade.strftime('%d.%m.%Y'))
             # Номер сделки в ТС
