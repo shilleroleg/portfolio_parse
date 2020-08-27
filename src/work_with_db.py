@@ -14,6 +14,9 @@ def find_and_del_duplicates(f_table, f_col):
     for an in ans:
         ids = an[0]
         find_value = an[1]
+        # Это условие срабатывает, если сделка является погашением, тогда эту строку не удаляем
+        if f_col == 'number_trade' and find_value == 0:
+            continue
         count += an[2]
         db.delete_row(f_table, ids)
     print(count)
